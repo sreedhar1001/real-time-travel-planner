@@ -1,0 +1,90 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: travel
+      POSTGRES_USER: travel
+      POSTGRES_PASSWORD: travel_local_only
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+      - ./sample-data.sql:/docker-entrypoint-initdb.d/002-sample-data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travel -d travel"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build:
+      context: ./backend
+    command: ["npm", "run", "start:api"]
+    environment:
+      PORT: "3000"
+      DATABASE_URL: postgres://travel:travel_local_only@postgres:5432/travel
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: local-compose-only-change-before-deployment
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  event-worker:
+    build:
+      context: ./backend
+    command: ["npm", "run", "start:worker"]
+    environment:
+      DATABASE_URL: postgres://travel:travel_local_only@postgres:5432/travel
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  flight-worker:
+    build:
+      context: ./backend
+    command: ["node", "dist/flight-worker.js"]
+    environment:
+      DATABASE_URL: postgres://travel:travel_local_only@postgres:5432/travel
+      REDIS_URL: redis://redis:6379
+      FLIGHT_INPUT_STREAM: travel:flight-status:inbox:v1
+      EVENT_STREAM: travel:events:v1
+      FLIGHT_EVENT_GROUP: flight-normalizer
+      FLIGHT_DELAY_THRESHOLD_MINUTES: "15"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  fixture-publisher:
+    build:
+      context: ./backend
+    command: ["node", "dist/publish-flight-fixture.js"]
+    environment:
+      REDIS_URL: redis://redis:6379
+      FLIGHT_INPUT_STREAM: travel:flight-status:inbox:v1
+    depends_on:
+      redis:
+        condition: service_healthy
+      flight-worker:
+        condition: service_started
+    profiles: ["fixture"]
+
+volumes:
+  postgres_data:

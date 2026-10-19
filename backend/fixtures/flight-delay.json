@@ -1,0 +1,10 @@
+{
+  "eventId": "fixture-flight-status-2026-11-01T12:00Z",
+  "provider": "fixture",
+  "flightNumber": "EX123",
+  "scheduledDeparture": "2026-11-01T14:00:00Z",
+  "estimatedDeparture": "2026-11-01T16:00:00Z",
+  "origin": "AAA",
+  "destination": "BBB",
+  "observedAt": "2026-11-01T12:00:00Z"
+}

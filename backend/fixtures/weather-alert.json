@@ -1,0 +1,17 @@
+{
+  "eventId": "fixture-weather-rain-2026-11-01T15:00Z",
+  "tripId": "00000000-0000-4000-8000-000000000002",
+  "type": "weather_alert",
+  "occurredAt": "2026-10-19T10:00:00Z",
+  "receivedAt": "2026-10-19T10:00:01Z",
+  "source": "fixture",
+  "schemaVersion": 1,
+  "payload": {
+    "location": { "latitude": 35.6762, "longitude": 139.6503 },
+    "startsAt": "2026-11-01T15:00:00Z",
+    "endsAt": "2026-11-01T17:00:00Z",
+    "condition": "heavy_rain",
+    "severity": "moderate",
+    "summary": "Fixture event for validating the weather event queue path"
+  }
+}
